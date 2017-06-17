@@ -19,7 +19,7 @@ client.on('error', function(err) {
   console.log('Error ' + err);
 });
 
-client.set('game2', '666');
+client.set('game2', '666 yo');
 
 const getContext = async () => {
   const game = await redisGet('game2');
