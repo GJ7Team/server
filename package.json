@@ -1,0 +1,25 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GJ7Team/server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GJ7Team/server/issues"
+  },
+  "homepage": "https://github.com/GJ7Team/server#readme",
+  "dependencies": {
+    "koa": "^2.2.0",
+    "koa-socket": "^4.4.0",
+    "redis": "^2.7.1"
+  }
+}
