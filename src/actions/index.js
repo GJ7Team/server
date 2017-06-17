@@ -37,12 +37,9 @@ const createMatchChannel = io => {
 
 module.exports = (redis, io, socket) => {
   socket.on(GAME_ENTER, ({ name, id }, res) => {
-    // redis.set('players', {
-    //   name,
-    //   id,
-    // });
-
     res({
+      name,
+      id,
       players: 143,
     });
   });
