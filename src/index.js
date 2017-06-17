@@ -5,4 +5,4 @@ app.use(ctx => {
   ctx.body = 'mamke privet';
 });
 
-app.listen(80);
+app.listen(3001);
