@@ -1,35 +1,34 @@
 const Koa = require('koa');
+const IO = require('koa-socket');
+const cors = require('kcors');
+
+const redis = require('./redis');
+const actions = require('./actions');
+
+// Redis.set('game2', '666 yo');
+
+// const getContext = async () => {
+//   const game = await Redis.get('game2');
+//   return { game };
+// };
+
 const app = new Koa();
-
-const REDIS_URL = process.env.REDIS_URL || null;
-const client = require('redis').createClient(REDIS_URL);
-
-const redisGet = key =>
-  new Promise((resolve, error) => {
-    client.get(key, (err, res) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(res);
-      }
-    });
-  });
-
-client.on('error', function(err) {
-  console.log('Error ' + err);
-});
-
-client.set('game2', '666 yo');
-
-const getContext = async () => {
-  const game = await redisGet('game2');
-
-  return { game };
-};
+app.use(cors());
 
 app.use(async ctx => {
-  const context = await getContext();
-  ctx.body = `mamke privet ${context.game}`;
+  // const context = await getContext();
+  ctx.body = `mamke privet`;
+});
+
+const io = new IO({
+  origins: '*:*',
+});
+
+io.attach(app);
+
+app._io.on('connection', socket => {
+  actions(redis, app._io, socket);
+  // socket.on('join', function(name, fn) {});
 });
 
 const PORT = process.env.PORT || 8080;
