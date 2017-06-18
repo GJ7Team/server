@@ -13,8 +13,8 @@ const MATCH_ENTER = 'match/ENTER';
 const MATCH_ATTACK = 'match/ATTACK';
 const MATCH_CAST = 'match/CAST';
 
-const createMatchChannel = io => {
-  const matchId = `/match-${++matchCounter}`;
+const createMatchChannel = (io, { enemyId, id }) => {
+  const matchId = `/match-${id}-${enemyId}`;
   const matchRoom = io.of(matchId);
 
   console.log('create room for ' + matchId);
@@ -53,28 +53,97 @@ const createMatchChannel = io => {
   return matchId;
 };
 
+const queue = [];
+const queueSubscribe = {};
+
 module.exports = (redis, io, socket) => {
-  socket.on(GAME_ENTER, ({ name, id }, res) => {
+  socket.on(GAME_ENTER, async ({ name, id }, res) => {
     console.log(GAME_ENTER, name, id);
+
+    const player = redis.hget('players', name);
+
+    if (!player) {
+      redis.incrPlayers();
+    }
+
+    redis.addPlayer({
+      id,
+      name,
+    });
+
+    const players = await redis.getPlayersNumber();
+
     res({
       name,
       id,
-      players: 143,
+      players,
     });
   });
 
-  socket.on(MATCH_SEARCH_START, ({ name, id }, res) => {
-    console.log(MATCH_SEARCH_START, name, id);
-    const matchId = createMatchChannel(io);
+  socket.on(MATCH_SEARCH_START, async ({ id }, res) => {
+    console.log(MATCH_SEARCH_START, id);
 
-    setTimeout(() => {
+    const createMatch = async ({ enemyId }) => {
+      const matchId = createMatchChannel(io, {
+        enemyId,
+        id,
+      });
+
+      const enemyName = await redis.getPlayerName(enemyId);
+
       res({
         matchId,
         enemy: {
-          id: 142,
-          name: 'Doom',
+          id: enemyId,
+          name: enemyName,
         },
       });
-    }, 1000);
+    };
+
+    if (queue.length !== 0) {
+      const enemyId = queue.pop();
+      queueSubscribe[enemyId](id);
+      queueSubscribe[enemyId] = null;
+
+      console.log('ENEMY', enemyId);
+      createMatch({
+        enemyId,
+      });
+    } else {
+      console.log('SUBSCRIBE QUEUE', id);
+
+      queue.push(id);
+      queueSubscribe[id] = enemyId => {
+        createMatch({
+          enemyId,
+        });
+      };
+    }
+
+    // const enemyId = await redis.getEnemy();
+    // const enemyId = await redis.getEnemy();
+    // console.log('enemy', enemyId);
+
+    // if (!enemyId) {
+    //   redis.addToSearchQueue({
+    //     id,
+    //   });
+    // } else {
+    //   createMatch({
+    //     enemyId,
+    //   });
+    // }
+
+    // const matchId = createMatchChannel(io);
+    //
+    // setTimeout(() => {
+    //   res({
+    //     matchId,
+    //     enemy: {
+    //       id: 142,
+    //       name: 'Doom',
+    //     },
+    //   });
+    // }, 1000);
   });
 };
