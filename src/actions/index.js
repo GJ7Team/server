@@ -44,8 +44,8 @@ const generatMatchMap = matchId => {
 
 const TICK = '1000';
 
-const createMatchChannel = (io, redis, { id, leftId, rightId }) => {
-  const matchId = `/match-${leftId}-${rightId}`;
+const createMatchChannel = (io, redis, { matchId, id, leftId, rightId }) => {
+  // const matchId = `/match-${leftId}-${rightId}`;
   const matchRoom = io.of(matchId);
 
   console.log('create room for ' + matchId);
@@ -133,6 +133,7 @@ const createMatchChannel = (io, redis, { id, leftId, rightId }) => {
 
 const queue = [];
 const queueSubscribe = {};
+let counter = 0;
 
 module.exports = async (redis, io, socket) => {
   socket.on(GAME_ENTER, async ({ name, id }, res) => {
@@ -172,8 +173,7 @@ module.exports = async (redis, io, socket) => {
   socket.on(MATCH_SEARCH_START, async ({ id }, res) => {
     console.log(MATCH_SEARCH_START, id);
 
-    const joinMatch = async ({ leftId, rightId, enemyId }) => {
-      const matchId = `/match-${leftId}-${rightId}`;
+    const joinMatch = async ({ matchId, leftId, rightId, enemyId }) => {
       const enemyName = await redis.getPlayerName(enemyId);
 
       res({
@@ -187,8 +187,9 @@ module.exports = async (redis, io, socket) => {
       });
     };
 
-    const createMatch = async ({ leftId, rightId, enemyId }) => {
-      const matchId = createMatchChannel(io, redis, {
+    const createMatch = async ({ matchId, leftId, rightId, enemyId }) => {
+      createMatchChannel(io, redis, {
+        matchId,
         id,
         leftId,
         rightId,
@@ -215,20 +216,23 @@ module.exports = async (redis, io, socket) => {
       const enemyId = queue.pop();
 
       console.log('ENEMY', enemyId);
+      const matchId = `/match-${++counter}`;
       createMatch({
         rightId: enemyId,
         leftId: id,
         enemyId,
+        matchId,
       });
 
-      queueSubscribe[enemyId](id);
+      queueSubscribe[enemyId](id, matchId);
       queueSubscribe[enemyId] = null;
     } else {
       console.log('SUBSCRIBE QUEUE', id);
 
       queue.push(id);
-      queueSubscribe[id] = enemyId => {
+      queueSubscribe[id] = (enemyId, matchId) => {
         joinMatch({
+          matchId,
           leftId: enemyId,
           rightId: id,
           enemyId,
