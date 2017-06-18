@@ -1,33 +1,51 @@
-const { FIXTURE_MAP_POINTS, FIXTURE_MAP_ID } = require('./fixtures');
+const {
+  FIXTURE_MAP_POINTS,
+  FIXTURE_MAP_ID,
+  MAP_COLONIES,
+} = require('./fixtures');
 
 let matchCounter = 0;
 
-const GAME_ENTER = 'game.enter';
+const GAME_ENTER = 'game/ENTER';
 
-const MATCH_ENTER = 'match.enter';
-const MATCH_START = 'match.start';
-const MATCH_FIND = 'match.find';
-
-const MATCH_ATTACK = 'match.attack';
-const MATCH_CAST = 'match.cast';
+const MATCH_SEARCH_START = 'match/SEARCH_START';
+const MATCH_ENTER = 'match/ENTER';
+const MATCH_ATTACK = 'match/ATTACK';
+const MATCH_CAST = 'match/CAST';
 
 const createMatchChannel = io => {
   const matchId = `/match-${++matchCounter}`;
   const matchRoom = io.of(matchId);
 
+  console.log('create room for ' + matchId);
+
   matchRoom.on('connection', socket => {
+    console.log('MATCH connection');
     socket.on(MATCH_ENTER, (data, res) => {
+      console.log(MATCH_ENTER, data);
       res({
-        map: FIXTURE_MAP_ID,
-        points: FIXTURE_MAP_POINTS,
+        map: {
+          colonies: MAP_COLONIES.map(d => {
+            if (d.type === 'neutral') {
+              d = Object.assign({}, d, {
+                x: Math.floor(Math.random() * 300) + 10,
+                y: Math.floor(Math.random() * 300) + 10,
+              });
+            }
+
+            return d;
+          }),
+        },
       });
     });
 
     socket.on(MATCH_ATTACK, (data, res) => {
+      console.log(MATCH_ATTACK);
       console.log('attack', data);
     });
 
     socket.on(MATCH_CAST, (data, res) => {
+      console.log(MATCH_CAST);
       console.log('cast', data);
     });
   });
@@ -37,6 +55,7 @@ const createMatchChannel = io => {
 
 module.exports = (redis, io, socket) => {
   socket.on(GAME_ENTER, ({ name, id }, res) => {
+    console.log(GAME_ENTER, name, id);
     res({
       name,
       id,
@@ -44,14 +63,16 @@ module.exports = (redis, io, socket) => {
     });
   });
 
-  socket.on(MATCH_FIND, ({ name, id }, res) => {
+  socket.on(MATCH_SEARCH_START, ({ name, id }, res) => {
+    console.log(MATCH_SEARCH_START, name, id);
     const matchId = createMatchChannel(io);
+
     res({
       matchId,
-      versus: 142,
-      name: 'Doom',
+      enemy: {
+        id: 142,
+        name: 'Doom',
+      },
     });
   });
-
-  socket.on(MATCH_START, ({ matchId }, res) => {});
 };
