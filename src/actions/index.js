@@ -1,5 +1,6 @@
 const {
   FIXTURE_MAP_POINTS,
+  FIXTURES_SCOREBOARD,
   FIXTURE_MAP_ID,
   MAP_COLONIES,
 } = require('./fixtures');
@@ -13,40 +14,74 @@ const MATCH_ENTER = 'match/ENTER';
 const MATCH_ATTACK = 'match/ATTACK';
 const MATCH_CAST = 'match/CAST';
 
-const createMatchChannel = (io, { enemyId, id }) => {
-  const matchId = `/match-${id}-${enemyId}`;
+const maps = {};
+const generatMatchMap = matchId => {
+  let counter = 0;
+  maps[matchId] = MAP_COLONIES.map(d => {
+    if (d.type === 'neutral') {
+      d = Object.assign({}, d, {
+        x: Math.floor(Math.random() * 300) + 10,
+        y: Math.floor(Math.random() * 300) + 10,
+      });
+    }
+
+    return Object.assign({}, d, {
+      id: ++counter,
+    });
+  });
+};
+
+const createMatchChannel = (io, { id, leftId, rightId }) => {
+  const matchId = `/match-${leftId}-${rightId}`;
   const matchRoom = io.of(matchId);
 
   console.log('create room for ' + matchId);
 
   matchRoom.on('connection', socket => {
     console.log('MATCH connection');
-    socket.on(MATCH_ENTER, (data, res) => {
-      console.log(MATCH_ENTER, data);
+
+    socket.on(MATCH_ENTER, ({ id }, res) => {
+      console.log(MATCH_ENTER, id);
+
+      const map = maps[matchId].map(d => {
+        if (leftId === id) {
+          if (d.type === 'ally') {
+            d = Object.assign({}, d, {
+              type: 'enemy',
+              image: 'colony:enemy',
+            });
+          } else if (d.type === 'enemy') {
+            d = Object.assign({}, d, {
+              type: 'ally',
+              image: 'colony:ally',
+            });
+          }
+        }
+
+        return d;
+      });
+
       res({
         map: {
-          colonies: MAP_COLONIES.map(d => {
-            if (d.type === 'neutral') {
-              d = Object.assign({}, d, {
-                x: Math.floor(Math.random() * 300) + 10,
-                y: Math.floor(Math.random() * 300) + 10,
-              });
-            }
-
-            return d;
-          }),
+          colonies: map,
         },
       });
     });
 
     socket.on(MATCH_ATTACK, (data, res) => {
       console.log(MATCH_ATTACK);
-      console.log('attack', data);
+
+      console.log('broadcast attack', data);
+
+      socket.broadcast.emit(MATCH_ATTACK, data);
+
+      res(data);
     });
 
     socket.on(MATCH_CAST, (data, res) => {
       console.log(MATCH_CAST);
       console.log('cast', data);
+      res(data);
     });
   });
 
@@ -77,22 +112,30 @@ module.exports = (redis, io, socket) => {
       name,
       id,
       players,
+      scoreboard: FIXTURES_SCOREBOARD,
     });
   });
 
   socket.on(MATCH_SEARCH_START, async ({ id }, res) => {
     console.log(MATCH_SEARCH_START, id);
 
-    const createMatch = async ({ enemyId }) => {
+    const createMatch = async ({ leftId, rightId, enemyId, generateMap }) => {
       const matchId = createMatchChannel(io, {
-        enemyId,
         id,
+        leftId,
+        rightId,
       });
+
+      if (generateMap) {
+        generatMatchMap(matchId);
+      }
 
       const enemyName = await redis.getPlayerName(enemyId);
 
       res({
         matchId,
+        leftId,
+        rightId,
         enemy: {
           id: enemyId,
           name: enemyName,
@@ -102,19 +145,25 @@ module.exports = (redis, io, socket) => {
 
     if (queue.length !== 0) {
       const enemyId = queue.pop();
-      queueSubscribe[enemyId](id);
-      queueSubscribe[enemyId] = null;
 
       console.log('ENEMY', enemyId);
       createMatch({
+        rightId: enemyId,
+        leftId: id,
         enemyId,
+        generateMap: true,
       });
+
+      queueSubscribe[enemyId](id);
+      queueSubscribe[enemyId] = null;
     } else {
       console.log('SUBSCRIBE QUEUE', id);
 
       queue.push(id);
       queueSubscribe[id] = enemyId => {
         createMatch({
+          leftId: enemyId,
+          rightId: id,
           enemyId,
         });
       };

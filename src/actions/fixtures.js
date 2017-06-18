@@ -24,6 +24,20 @@ module.exports = {
       y: 30,
     },
   ],
+  FIXTURES_SCOREBOARD: [
+    {
+      user: 'Semen',
+      scroe: '20/10',
+    },
+    {
+      user: 'Bora',
+      scroe: '20/10',
+    },
+    {
+      user: 'Zhenya',
+      scroe: '20/10',
+    },
+  ],
   MAP_COLONIES: [
     { image: 'colony:ally', type: 'ally', x: 10, y: 200 },
     { image: 'colony:neutral', type: 'neutral', x: 420, y: 320 },
