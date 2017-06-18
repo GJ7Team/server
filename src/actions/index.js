@@ -67,12 +67,14 @@ module.exports = (redis, io, socket) => {
     console.log(MATCH_SEARCH_START, name, id);
     const matchId = createMatchChannel(io);
 
-    res({
-      matchId,
-      enemy: {
-        id: 142,
-        name: 'Doom',
-      },
-    });
+    setTimeout(() => {
+      res({
+        matchId,
+        enemy: {
+          id: 142,
+          name: 'Doom',
+        },
+      });
+    }, 1000);
   });
 };
