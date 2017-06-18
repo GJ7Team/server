@@ -8,8 +8,18 @@ client.on('error', function(err) {
 const redis = {
   hset: (namespace, key, value) => client.hset(namespace, key, value),
   hget: (namespace, key) =>
-    new Promise((resolve, error) => {
+    new Promise((resolve, reject) => {
       client.hget(namespace, key, (err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(res);
+        }
+      });
+    }),
+  hgetall: namespace =>
+    new Promise((resolve, reject) => {
+      client.hgetall(namespace, (err, res) => {
         if (err) {
           reject(err);
         } else {
@@ -45,16 +55,34 @@ const redis = {
     this.hset('players', id, name);
   },
 
-  getPlayerName(enemyId) {
-    return this.hget('players', enemyId);
+  getPlayerName(id) {
+    return this.hget('players', id);
   },
 
   addToSearchQueue({ id }) {
     client.rpush('search.queue', id);
   },
 
+  incrWin(name, i = 1) {
+    client.hincrby('stats.wins', name, i);
+  },
+
+  incrLost(name, i = 1) {
+    client.hincrby('stats.looses', name, i);
+  },
+
+  async getStats() {
+    const wins = await this.hgetall('stats.wins');
+    const looses = await this.hgetall('stats.looses');
+
+    return {
+      wins,
+      looses,
+    };
+  },
+
   getEnemy() {
-    return new Promise((resolve, error) => {
+    return new Promise((resolve, reject) => {
       client.lpop('search.queue', (err, res) => {
         if (err) {
           reject(err);
@@ -77,7 +105,13 @@ const redis = {
 //   console.log(c);
 // });
 // client.publish('search.queue', 'add user');
-//
+
+redis.del('stats.looses');
+redis.del('stats.wins');
+
+redis.incrWin('YOUR MOM', 10);
+redis.incrLost('YOUR MOM');
+
 redis.set('world.players', 0);
 redis.del('search.queue');
 redis.del('players');

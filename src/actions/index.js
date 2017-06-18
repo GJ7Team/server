@@ -16,6 +16,9 @@ const MATCH_CAST = 'match/CAST';
 const MATCH_TICK = 'match/TICK';
 const MATCH_PLAYER_LEFT = 'match/PLAYER_LEFT';
 
+const MATCH_LOST = 'match/LOST';
+const MATCH_WIN = 'match/WIN';
+
 const maps = {};
 // const ZONES = [{
 //   x1: 10, x2: 100
@@ -41,7 +44,7 @@ const generatMatchMap = matchId => {
 
 const TICK = '1000';
 
-const createMatchChannel = (io, { id, leftId, rightId }) => {
+const createMatchChannel = (io, redis, { id, leftId, rightId }) => {
   const matchId = `/match-${leftId}-${rightId}`;
   const matchRoom = io.of(matchId);
 
@@ -62,6 +65,18 @@ const createMatchChannel = (io, { id, leftId, rightId }) => {
       socket.broadcast.emit(MATCH_PLAYER_LEFT);
 
       delete io.nsps[matchId];
+    });
+
+    socket.on(MATCH_WIN, async ({ id }, res) => {
+      const name = await redis.getPlayerName(id);
+      redis.incrWin(name);
+      res();
+    });
+
+    socket.on(MATCH_LOST, async ({ id }, res) => {
+      const name = await redis.getPlayerName(id);
+      redis.incrLost(name);
+      res();
     });
 
     socket.on(MATCH_ENTER, ({ id }, res) => {
@@ -115,7 +130,7 @@ const createMatchChannel = (io, { id, leftId, rightId }) => {
 const queue = [];
 const queueSubscribe = {};
 
-module.exports = (redis, io, socket) => {
+module.exports = async (redis, io, socket) => {
   socket.on(GAME_ENTER, async ({ name, id }, res) => {
     console.log(GAME_ENTER, name, id);
 
@@ -128,7 +143,7 @@ module.exports = (redis, io, socket) => {
       queueSubscribe[id] = null;
     });
 
-    const player = redis.hget('players', name);
+    const player = await redis.hget('players', id);
 
     if (!player) {
       redis.incrPlayers();
@@ -140,12 +155,13 @@ module.exports = (redis, io, socket) => {
     });
 
     const players = await redis.getPlayersNumber();
+    const stats = await redis.getStats();
 
     res({
       name,
       id,
       players,
-      scoreboard: FIXTURES_SCOREBOARD,
+      stats,
     });
   });
 
@@ -168,7 +184,7 @@ module.exports = (redis, io, socket) => {
     };
 
     const createMatch = async ({ leftId, rightId, enemyId }) => {
-      const matchId = createMatchChannel(io, {
+      const matchId = createMatchChannel(io, redis, {
         id,
         leftId,
         rightId,
