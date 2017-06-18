@@ -132,15 +132,17 @@ module.exports = (redis, io, socket) => {
 
       const enemyName = await redis.getPlayerName(enemyId);
 
-      res({
-        matchId,
-        leftId,
-        rightId,
-        enemy: {
-          id: enemyId,
-          name: enemyName,
-        },
-      });
+      setTimeout(() => {
+        res({
+          matchId,
+          leftId,
+          rightId,
+          enemy: {
+            id: enemyId,
+            name: enemyName,
+          },
+        });
+      }, 500);
     };
 
     if (queue.length !== 0) {
