@@ -60,6 +60,8 @@ const createMatchChannel = (io, { id, leftId, rightId }) => {
     // MATCH DISCONENCT
     socket.on('disconnect', () => {
       socket.broadcast.emit(MATCH_PLAYER_LEFT);
+
+      delete io.nsps[matchId];
     });
 
     socket.on(MATCH_ENTER, ({ id }, res) => {
