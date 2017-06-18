@@ -97,6 +97,7 @@ const redis = {
 // client.on('message', function() {
 //   console.log(arguments);
 // });
+//
 // client.on('subscribe', function() {
 //   console.log(arguments);
 // });
@@ -109,8 +110,17 @@ const redis = {
 redis.del('stats.looses');
 redis.del('stats.wins');
 
-redis.incrWin('YOUR MOM', 10);
-redis.incrLost('YOUR MOM');
+redis.incrWin('vbrashkov', 76);
+redis.incrLost('vbrashkov', 58);
+
+redis.incrWin('Simon', 24);
+redis.incrLost('Simon', 12);
+
+redis.incrWin('Bora', 36);
+redis.incrLost('Bora', 25);
+
+redis.incrWin('tuchk4', 12);
+redis.incrLost('tuchk4', 7);
 
 redis.set('world.players', 0);
 redis.del('search.queue');

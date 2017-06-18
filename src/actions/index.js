@@ -31,8 +31,8 @@ const generatMatchMap = matchId => {
     if (d.type === 'neutral') {
       // neutralIndex++;
       d = Object.assign({}, d, {
-        x: Math.floor(Math.random() * 600) + 30,
-        y: Math.floor(Math.random() * 350) + 30,
+        x: Math.floor(Math.random() * 500) + 80,
+        y: Math.floor(Math.random() * 300) + 80,
       });
     }
 
@@ -61,6 +61,10 @@ const createMatchChannel = (io, redis, { id, leftId, rightId }) => {
     console.log('MATCH connection');
 
     // MATCH DISCONENCT
+    socket.on(MATCH_PLAYER_LEFT, () => {
+      delete io.nsps[matchId];
+    });
+
     socket.on('disconnect', () => {
       socket.broadcast.emit(MATCH_PLAYER_LEFT);
 
