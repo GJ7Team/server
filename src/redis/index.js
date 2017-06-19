@@ -107,25 +107,25 @@ const redis = {
 // });
 // client.publish('search.queue', 'add user');
 
-redis.del('stats.looses');
-redis.del('stats.wins');
-
-redis.incrWin('vbrashkov', 76);
-redis.incrLost('vbrashkov', 58);
-
-redis.incrWin('Simon', 24);
-redis.incrLost('Simon', 12);
-
-redis.incrWin('Bora', 36);
-redis.incrLost('Bora', 25);
-
-redis.incrWin('tuchk4', 12);
-redis.incrLost('tuchk4', 7);
-
-redis.set('world.players', 0);
-redis.del('search.queue');
-redis.del('players');
-redis.del('matches');
-redis.del('scoreboard');
+// redis.del('stats.looses');
+// redis.del('stats.wins');
+//
+// redis.incrWin('vbrashkov', 76);
+// redis.incrLost('vbrashkov', 58);
+//
+// redis.incrWin('Simon', 24);
+// redis.incrLost('Simon', 12);
+//
+// redis.incrWin('Bora', 36);
+// redis.incrLost('Bora', 25);
+//
+// redis.incrWin('tuchk4', 12);
+// redis.incrLost('tuchk4', 7);
+//
+// redis.set('world.players', 0);
+// redis.del('search.queue');
+// redis.del('players');
+// redis.del('matches');
+// redis.del('scoreboard');
 
 module.exports = redis;
