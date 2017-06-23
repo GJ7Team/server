@@ -31,8 +31,8 @@ const generatMatchMap = matchId => {
     if (d.type === 'neutral') {
       // neutralIndex++;
       d = Object.assign({}, d, {
-        x: Math.floor(Math.random() * 500) + 80,
-        y: Math.floor(Math.random() * 300) + 80,
+        x: d.x, //Math.floor(Math.random() * 500) + 80,
+        y: Math.floor(Math.random() * 280) + 100,
       });
     }
 
@@ -131,21 +131,47 @@ const createMatchChannel = (io, redis, { matchId, id, leftId, rightId }) => {
   return matchId;
 };
 
+const local = {
+  playersOnline: [],
+};
+
 const queue = [];
+function removeFromQueue(id) {
+  const queueIndex = queue.indexOf(id);
+  if (queueIndex !== -1) {
+    queue.splice(queueIndex, 1);
+  }
+}
 const queueSubscribe = {};
+const playersOnline = [];
+function getUserTag(name, id) {
+  return `${name}-${id}`;
+}
+function removeFromOnline(name, id) {
+  const onlineIndex = playersOnline.indexOf(`${name}-${id}`);
+  if (onlineIndex !== -1) {
+    playersOnline.splice(onlineIndex, 1);
+  }
+}
 let counter = 0;
 
 module.exports = async (redis, io, socket) => {
+
+  function onPlayersOnlineChange() {
+    socket.broadcast.emit('playersOnline', playersOnline);
+  }
+
   socket.on(GAME_ENTER, async ({ name, id }, res) => {
     console.log(GAME_ENTER, name, id);
+    playersOnline.push(`${name}-${id}`);
+    onPlayersOnlineChange();
 
     socket.on('disconnect', () => {
       console.log('disconnect', id);
-      const queueIndex = queue.indexOf(id);
-      if (queueIndex !== -1) {
-        queue.splice(queueIndex, 1);
-      }
+      removeFromOnline(name, id);
+      removeFromQueue(id);
       queueSubscribe[id] = null;
+      onPlayersOnlineChange();
     });
 
     const player = await redis.hget('players', id);
@@ -167,6 +193,7 @@ module.exports = async (redis, io, socket) => {
       id,
       players,
       stats,
+      playersOnline,
     });
   });
 
