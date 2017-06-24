@@ -123,7 +123,9 @@ const createMatchChannel = (io, redis, { matchId, id, leftId, rightId }) => {
 
     socket.on(MATCH_CAST, (data, res) => {
       console.log(MATCH_CAST);
-      console.log('cast', data);
+      console.log('broadcast cast', data);
+
+      socket.broadcast.emit(MATCH_CAST, data);
       res(data);
     });
   });
